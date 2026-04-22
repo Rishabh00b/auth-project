@@ -2,9 +2,6 @@ import React, { useState } from "react";
 import axios from "axios";
 import "./App.css";
 
-// ✅ Base URL (clean)
-axios.defaults.baseURL = "https://auth-project-wzyx.onrender.com";
-
 function App() {
   const [isLogin, setIsLogin] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -15,56 +12,44 @@ function App() {
     password: ""
   });
 
+  const API = process.env.REACT_APP_API_URL;
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async () => {
+    setLoading(true);
+
     const url = isLogin
-      ? "/api/auth/login"
-      : "/api/auth/register";
+      ? `${API}/api/auth/login`
+      : `${API}/api/auth/register`;
 
     try {
-      setLoading(true);
+      const res = await axios.post(url, form);
 
-      const res = await axios.post(url, form, {
-        headers: {
-          "Content-Type": "application/json"
-        },
-        timeout: 60000 // ⏳ important for Render
-      });
+      if (isLogin) {
+        alert("Login successful 🎉");
+        console.log(res.data.token);
 
-      // Save token if login
-      if (isLogin && res.data.token) {
+        // ✅ Save token (important for next step)
         localStorage.setItem("token", res.data.token);
+
+      } else {
+        alert("Signup successful 🎉");
       }
-
-      alert(
-        isLogin
-          ? "Login successful 🎉"
-          : "User registered successfully ✅"
-      );
-
-      console.log("Response:", res.data);
 
     } catch (err) {
-      console.log("FULL ERROR:", err);
-      console.log("RESPONSE:", err.response);
+      console.error(err);
 
-      // 🔥 Proper error message
-      if (err.code === "ECONNABORTED") {
-        alert("Server took too long. Try again (Render sleep issue).");
+      if (err.response) {
+        alert(err.response.data.msg || "Server error");
       } else {
-        alert(
-          err.response?.data?.msg ||
-          err.response?.data ||
-          err.message ||
-          "Something went wrong"
-        );
+        alert("Network Error ❌ (Check backend / CORS)");
       }
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   return (
@@ -94,17 +79,10 @@ function App() {
         />
 
         <button onClick={handleSubmit} disabled={loading}>
-          {loading
-            ? "Please wait..."
-            : isLogin
-            ? "Login"
-            : "Signup"}
+          {loading ? "Please wait..." : isLogin ? "Login" : "Signup"}
         </button>
 
-        <p
-          onClick={() => setIsLogin(!isLogin)}
-          className="switch"
-        >
+        <p onClick={() => setIsLogin(!isLogin)} className="switch">
           {isLogin
             ? "Don't have an account? Signup"
             : "Already have an account? Login"}
