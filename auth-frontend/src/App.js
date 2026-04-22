@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
 
 function App() {
   const [isLogin, setIsLogin] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -13,6 +14,21 @@ function App() {
   });
 
   const API = process.env.REACT_APP_API_URL;
+
+  // 🔥 Load user if token exists
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      axios.get(`${API}/api/auth/me`, {
+        headers: {
+          Authorization: token
+        }
+      })
+      .then(res => setUser(res.data))
+      .catch(() => localStorage.removeItem("token"));
+    }
+  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -29,29 +45,48 @@ function App() {
       const res = await axios.post(url, form);
 
       if (isLogin) {
-        alert("Login successful 🎉");
-        console.log(res.data.token);
-
-        // ✅ Save token (important for next step)
         localStorage.setItem("token", res.data.token);
 
+        const userRes = await axios.get(`${API}/api/auth/me`, {
+          headers: {
+            Authorization: res.data.token
+          }
+        });
+
+        setUser(userRes.data);
       } else {
         alert("Signup successful 🎉");
+        setIsLogin(true);
       }
 
     } catch (err) {
-      console.error(err);
-
-      if (err.response) {
-        alert(err.response.data.msg || "Server error");
-      } else {
-        alert("Network Error ❌ (Check backend / CORS)");
-      }
+      alert(err.response?.data?.msg || "Error occurred");
     }
 
     setLoading(false);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setUser(null);
+  };
+
+  // 🔥 DASHBOARD UI
+  if (user) {
+    return (
+      <div className="container">
+        <div className="card">
+          <h2>Welcome 🎉</h2>
+          <p><b>Name:</b> {user.name}</p>
+          <p><b>Email:</b> {user.email}</p>
+
+          <button onClick={handleLogout}>Logout</button>
+        </div>
+      </div>
+    );
+  }
+
+  // 🔥 AUTH UI
   return (
     <div className="container">
       <div className="card">
