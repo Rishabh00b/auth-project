@@ -8,38 +8,30 @@ dotenv.config();
 
 const app = express();
 
-// ✅ Connect DB
+// ✅ CONNECT DB
 connectDB();
 
-// ✅ CORS FIX (VERY IMPORTANT)
+// ✅ VERY IMPORTANT CORS FIX
 app.use(cors({
-  origin: [
-    "http://localhost:3000",
-    "https://auth-project-sable.vercel.app"
-  ],
+  origin: "*",   // <-- TEMP FIX (allow all)
+  methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
 
-// ✅ Middleware
+// Middleware
 app.use(express.json());
 
-// ✅ Routes
+// Routes
 app.use("/api/auth", authRoutes);
 
-// ✅ Test route
+// Test route
 app.get("/", (req, res) => {
   res.send("API Running");
 });
 
-// ✅ Global error handler (optional but good)
-app.use((err, req, res, next) => {
-  console.error(err.message);
-  res.status(500).send("Server Error");
-});
-
-// ✅ Start server
+// Start server
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log("Server running");
 });
