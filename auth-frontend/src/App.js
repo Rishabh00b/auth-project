@@ -2,9 +2,13 @@ import React, { useState } from "react";
 import axios from "axios";
 import "./App.css";
 
+// ✅ Base URL (clean)
+axios.defaults.baseURL = "https://auth-project-wzyx.onrender.com";
+
 function App() {
   const [isLogin, setIsLogin] = useState(false);
   const [loading, setLoading] = useState(false);
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -17,13 +21,18 @@ function App() {
 
   const handleSubmit = async () => {
     const url = isLogin
-      ? "https://auth-project-wzyx.onrender.com/api/auth/login"
-      : "https://auth-project-wzyx.onrender.com/api/auth/register";
+      ? "/api/auth/login"
+      : "/api/auth/register";
 
     try {
       setLoading(true);
 
-      const res = await axios.post(url, form);
+      const res = await axios.post(url, form, {
+        headers: {
+          "Content-Type": "application/json"
+        },
+        timeout: 60000 // ⏳ important for Render
+      });
 
       // Save token if login
       if (isLogin && res.data.token) {
@@ -42,12 +51,17 @@ function App() {
       console.log("FULL ERROR:", err);
       console.log("RESPONSE:", err.response);
 
-      alert(
-        err.response?.data?.msg ||
-        err.response?.data ||
-        err.message ||
-        "Something went wrong"
-      );
+      // 🔥 Proper error message
+      if (err.code === "ECONNABORTED") {
+        alert("Server took too long. Try again (Render sleep issue).");
+      } else {
+        alert(
+          err.response?.data?.msg ||
+          err.response?.data ||
+          err.message ||
+          "Something went wrong"
+        );
+      }
     } finally {
       setLoading(false);
     }
